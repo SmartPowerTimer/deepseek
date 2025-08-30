@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek Exporter App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .description {
+            font-size: 16px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            border-color: #4b6cb7;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.2);
+        }
+        
+        .api-key-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: #4b6cb7;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.2);
+        }
+        
+        button {
+            background: #4b6cb7;
+            color: white;
+            border: none;
+            padding: 14px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background: #3a559f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .export-btn {
+            min-width: 200px;
+        }
+        
+        .export-btn.docx {
+            background: #2b579a;
+        }
+        
+        .export-btn.docx:hover {
+            background: #244981;
+        }
+        
+        .export-btn.pdf {
+            background: #f44336;
+        }
+        
+        .export-btn.pdf:hover {
+            background: #d32f2f;
+        }
+        
+        .results-section {
+            margin-top: 20px;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .results-content {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            background: #f9fafc;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .ai-message {
+            background: #f5f5f5;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+        
+        .user-avatar {
+            background: #2196f3;
+        }
+        
+        .ai-avatar {
+            background: #4caf50;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-content p {
+            line-height: 1.6;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 10px;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+            }
+            
+            .export-btn {
+                width: 100%;
+            }
+            
+            .api-key-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>DeepSeek Results Exporter</h1>
+                <p class="description">Get AI responses and export them to DOCX or PDF format</p>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <textarea id="queryInput" placeholder="Enter your query here...">What is the future of artificial intelligence in healthcare?</textarea>
+                <div class="api-key-container">
+                    <input type="password" id="apiKey" placeholder="Enter your DeepSeek API key (simulated for demo)">
+                </div>
+                <button id="submitBtn">
+                    <span>Submit to DeepSeek</span>
+                </button>
+            </div>
+            
+            <div class="export-buttons">
+                <button class="export-btn docx" id="exportDocx">
+                    <span>Export to DOCX</span>
+                </button>
+                <button class="export-btn pdf" id="exportPdf">
+                    <span>Export to PDF</span>
+                </button>
+            </div>
+            
+            <div class="results-section">
+                <div class="results-header">
+                    <h2>Conversation History</h2>
+                </div>
+                <div class="results-content" id="resultsContainer">
+                    <div class="message ai-message">
+                        <div class="avatar ai-avatar">AI</div>
+                        <div class="message-content">
+                            <p>Welcome! Enter your query above to get started. This demo includes working DOCX and PDF export functionality.</p>
+                            <div class="timestamp">Just now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>DeepSeek Results Exporter App &copy; 2023</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitBtn = document.getElementById('submitBtn');
+            const exportDocxBtn = document.getElementById('exportDocx');
+            const exportPdfBtn = document.getElementById('exportPdf');
+            const queryInput = document.getElementById('queryInput');
+            const apiKeyInput = document.getElementById('apiKey');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            let conversationHistory = [];
+            
+            // Format timestamp
+            function getTimestamp() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            // Simulate DeepSeek API response
+            function simulateDeepSeekResponse(query) {
+                return new Promise(resolve => {
+                    // Show loading state
+                    submitBtn.innerHTML = '<div class="loading"></div> Processing...';
+                    submitBtn.disabled = true;
+                    
+                    setTimeout(() => {
+                        // Sample responses that might come from DeepSeek
+                        const responses = {
+                            "What is the future of artificial intelligence in healthcare?": "The future of AI in healthcare is promising, with potential applications in diagnostics, treatment personalization, and administrative automation. AI can analyze medical images with high accuracy, predict disease outbreaks, and assist in drug discovery. In the coming years, we expect AI to enhance telemedicine, enable early disease detection through pattern recognition, and reduce healthcare costs by optimizing workflows.",
+                            "How does machine learning work?": "Machine learning is a subset of AI that enables systems to learn and improve from experience without explicit programming. It works by using algorithms to identify patterns in data, build models based on these patterns, and make predictions or decisions. The three main types are supervised learning (using labeled data), unsupervised learning (finding patterns in unlabeled data), and reinforcement learning (learning through trial and error with rewards).",
+                            "What are the benefits of renewable energy?": "Renewable energy offers numerous benefits including reduced greenhouse gas emissions, improved public health, inexhaustible energy supply, and job creation. Solar, wind, hydro, and geothermal energy sources are sustainable alternatives to fossil fuels that can enhance energy security, stabilize energy prices, and provide access to energy in remote areas. The decentralization of energy production also makes communities more resilient.",
+                            "Explain quantum computing in simple terms": "Quantum computing harnesses the principles of quantum mechanics to process information in ways traditional computers cannot. While classical computers use bits (0s and 1s), quantum computers use quantum bits or qubits that can exist as both 0 and 1 simultaneously through superposition. This allows them to perform complex calculations much faster for specific problems like cryptography, drug discovery, and optimization tasks.",
+                            "How can I improve my programming skills?": "To improve programming skills: 1) Practice regularly through coding challenges and projects, 2) Study others' code on platforms like GitHub, 3) Learn multiple programming languages to understand different paradigms, 4) Understand fundamental concepts like algorithms and data structures, 5) Contribute to open source projects, 6) Read documentation thoroughly, and 7) Don't just write code - learn to debug and optimize existing code."
+                        };
+                        
+                        const response = responses[query] || `I've received your question about "${query}". This is a simulated response from what would be the DeepSeek AI. In a real implementation, this would be the actual API response.`;
+                        
+                        // Restore button state
+                        submitBtn.innerHTML = '<span>Submit to DeepSeek</span>';
+                        submitBtn.disabled = false;
+                        
+                        resolve(response);
+                    }, 1500);
+                });
+            }
+            
+            // Add message to results container
+            function addMessage(content, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = `avatar ${isUser ? 'user-avatar' : 'ai-avatar'}`;
+                avatar.textContent = isUser ? 'You' : 'AI';
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.innerHTML = `<p>${content}</p><div class="timestamp">${getTimestamp()}</div>`;
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+                
+                resultsContainer.appendChild(messageDiv);
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
+                
+                // Add to conversation history
+                conversationHistory.push({
+                    role: isUser ? 'user' : 'assistant',
+                    content: content,
+                    timestamp: getTimestamp()
+                });
+            }
+            
+            // Handle query submission
+            submitBtn.addEventListener('click', async function() {
+                const query = queryInput.value.trim();
+                const apiKey = apiKeyInput.value.trim();
+                
+                if (!query) {
+                    alert('Please enter a query');
+                    return;
+                }
+                
+                // Add user message
+                addMessage(query, true);
+                
+                // Clear input
+                queryInput.value = '';
+                
+                // Simulate API call
+                try {
+                    const response = await simulateDeepSeekResponse(query);
+                    addMessage(response);
+                } catch (error) {
+                    addMessage('Sorry, there was an error processing your request. Please try again.');
+                }
+            });
+            
+            // Export to DOCX
+            exportDocxBtn.addEventListener('click', function() {
+                if (conversationHistory.length === 0) {
+                    alert('No conversation to export');
+                    return;
+                }
+                
+                // Create a simple text representation for the DOCX file
+                let docContent = "DeepSeek Conversation Export\n\n";
+                conversationHistory.forEach(msg => {
+                    docContent += `${msg.role.toUpperCase()} (${msg.timestamp}):\n${msg.content}\n\n`;
+                });
+                
+                // Create a blob and download link
+                const blob = new Blob([docContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'deepseek-conversation.docx';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                // Visual feedback
+                exportDocxBtn.innerHTML = '✓ Exported!';
+                setTimeout(() => {
+                    exportDocxBtn.innerHTML = '<span>Export to DOCX</span>';
+                }, 2000);
+            });
+            
+            // Export to PDF
+            exportPdfBtn.addEventListener('click', function() {
+                if (conversationHistory.length === 0) {
+                    alert('No conversation to export');
+                    return;
+                }
+                
+                // Using jsPDF for PDF generation
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Add title
+                doc.setFontSize(20);
+                doc.text('DeepSeek Conversation', 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                
+                let y = 30;
+                conversationHistory.forEach(msg => {
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    
+                    // Add role and timestamp
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`${msg.role.toUpperCase()} (${msg.timestamp}):`, 15, y);
+                    
+                    // Add content
+                    doc.setFont(undefined, 'normal');
+                    const splitText = doc.splitTextToSize(msg.content, 180);
+                    doc.text(splitText, 15, y + 7);
+                    
+                    y += 7 + (splitText.length * 7);
+                });
+                
+                // Save the PDF
+                doc.save('deepseek-conversation.pdf');
+                
+                // Visual feedback
+                exportPdfBtn.innerHTML = '✓ Exported!';
+                setTimeout(() => {
+                    exportPdfBtn.innerHTML = '<span>Export to PDF</span>';
+                }, 2000);
+            });
+            
+            // Allow pressing Enter to submit
+            queryInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitBtn.click();
+                }
+            });
+            
+            // Add sample conversation on load
+            setTimeout(() => {
+                addMessage("Hello! I can help you with information about AI, technology, science, and more. What would you like to know?", false);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
